@@ -1,0 +1,10 @@
+
+*.x
+
+*.jpg
+
+*.dat
+
+stb_image/stb_image/.vscode/settings.json
+
+stb_image/stb/

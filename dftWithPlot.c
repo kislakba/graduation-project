@@ -27,10 +27,12 @@ void printDoubleArray(double *T, int n) {
 
      puts("");
 }
+
 double r2()
 {
     return (double)rand() / (double)RAND_MAX ;
 }
+
 void fillArrayWithRandomSinus(double *T, int n) {
      int i;
      double multp = 0.2;
@@ -39,25 +41,24 @@ void fillArrayWithRandomSinus(double *T, int n) {
           T[i]=4*sin(9*(i * multp)) + 14*sin(3 * (i * multp)) - 7*sin(10 * (i * multp));
 
      }
+
 double complex *dft(double *points, int size){
 
   double complex *result =create1DComplexArray(size);
   double complex temp;
   int n,k;
-  double arg;
-  double cosarg, sinarg;
+  double arg, cosarg, sinarg;
   for (k = 0; k < size; k++) {
     result[k] = 0   + 0*I;
     arg = -2.0 * PI * k / (double)size;
     for (n = 0; n < size; n++) {
-      cosarg = points[n]*cos(n * arg);
-      sinarg = points[n]*sin(n * arg);
-      temp = cosarg + sinarg * I;
-      result[k] += temp;
+      cosarg = points[n]*cos(n * arg); sinarg = points[n]*sin(n * arg);
+      temp = cosarg + sinarg * I;result[k] += temp;
     }
   }
   return result;
 }
+
 void plotDouble(char* str, double *points, int size){
   // open persistent gnuplot window
   FILE* gnuplot_pipe = fopen (str, "w");
