@@ -28,6 +28,11 @@ double *create1DDoubleArray(int n)
      double *T = (double *)malloc(n * sizeof(double));
      return T;
 }
+double *create1DFloatArray(int n)
+{
+     float *T = (float *)malloc(n * sizeof(float));
+     return T;
+}
 double *create2DDoubleArray(int n, int m)
 {
      double **T = (double **)malloc(n * sizeof(double *));
@@ -55,19 +60,19 @@ double r2()
 {
      return (double)rand() / (double)RAND_MAX;
 }
-unsigned char *convertToGray(unsigned char *img, int width, int height, int channels)
+float *convertToGray(float *img, int width, int height, int channels)
 {
      size_t img_size = width * height * channels;
      int gray_channels = channels == 4 ? 2 : 1;
      size_t gray_img_size = width * height * gray_channels;
 
-     unsigned char *gray_img = malloc(gray_img_size);
+     float *gray_img = malloc(gray_img_size);
      if (gray_img == NULL)
      {
           printf("an error occured while loading gray_image \n");
           return 0;
      }
-     for (unsigned char *p = img, *pg = gray_img; p != img + img_size; p += channels, pg += gray_channels)
+     for (float *p = img, *pg = gray_img; p != img + img_size; p += channels, pg += gray_channels)
      {
           *pg = (uint8_t)((0.2126 * (*p) + 0.7152 * (*(p + 1)) + 0.0722 * (*(p + 2))));
           if (channels == 4)
@@ -92,49 +97,17 @@ double complex *dft(double *points, int size)
           {
                cosarg = points[n] * cos(n * arg);
                sinarg = points[n] * sin(n * arg);
-               temp = cosarg + sinarg * I;
+               temp = cosarg + sinarg * I; //fourier donusumu alani
                result[k] += temp;
           }
      }
      return result;
 }
-double complex *twoDimenDft(unsigned char *points, int height, int width)
-{
-     double complex *result = create1DComplexArray(height * width);
-     double complex temp;
-     int ii, jj;
-     double argX, argY;
-     double cosarg, sinarg;
-     int row, rowOut;
-     for (int i = 0; i < height; i++)
-     {
-          for (int j = 0; j < width; j++)
-          {
-               float ak = 0;
-               float bk = 0;
-               for (ii = 0; ii < height; i++)
-               {
-                    row = (int)(ii / height);
-                    for (jj = 0; jj < width; jj++)
-                    {
-                         float x = -2.0 * PI * i * ii / (float)width;
-                         float y = -2.0 * PI * j * jj / (float)height;
-                         ak += ((double)points[(ii * width) + jj] / 255) * cos(x + y);
-                         bk += ((double)points[(ii * width) + jj] / 255) * 1.0 * sin(x + y);
-                    }
-               }
-               rowOut = (int)(i / height);
-               temp = ak + bk * I;
-               result[(i * rowOut) + j] += temp;
-          }
-     }
 
-     return result;
-}
-double *findABS(double complex *complexValues, int size)
+float *findABS(double complex *complexValues, int size)
 {
-     double *result = create1DDoubleArray(size);
-     double x, y, temp_res;
+     float *result = create1DFloatArray(size);
+     float x, y, temp_res;
      for (int i = 0; i < size; i++)
      {
           x = creal(complexValues[i]);
@@ -144,36 +117,73 @@ double *findABS(double complex *complexValues, int size)
      }
      return result;
 }
-double *findABS2D(double complex *complexValues, int height, int width)
+float *twoDimenDft(float *points, int height, int width)
 {
-     double *result = create1DDoubleArray(height * width);
-     double x, y, temp_res;
-     int row;
      int size = height * width;
-     for (int j = 0; j < height; j++)
+     double complex *resultForFirstDFT = create1DComplexArray(size);
+     double complex *resultForSecondDFT = create1DComplexArray(size);
+     double complex temp;
+     float *tempPhoto = create1DFloatArray(size);
+     float *photo = create1DFloatArray(size);
+     int n, k, row, col, place;
+     double arg;
+     double cosarg, sinarg;
+     printf("birinci asama tamam \n");
+
+     for (k = 0; k < size; k++)
      {
-          for (int i = 0; i < width; i++)
+          printf("birinci asama tamam \n");
+
+          row = k / width;
+          resultForFirstDFT[k] = 0 + 0 * I;
+          arg = -2.0 * PI * (k % width) / (double)size;
+          for (n = 0; n < width; n++)
           {
-               x = creal(complexValues[(j * width) + i]);
-               y = cimag(complexValues[(j * width) + i]);
-               temp_res = sqrt((x * x) + (y * y)) / (size / 2);
-               result[(j * width) + i] = temp_res;
+               printf("birinci asama tamam \n");
+               place = (row * width) + n; // this because of : in second loop we do not know where we are, we are just mapping in width
+               cosarg = points[place] * cos(place * arg);
+               sinarg = points[place] * sin(place * arg);
+               temp = cosarg + sinarg * I; //fourier donusumu alani
+               resultForFirstDFT[k] += temp;
           }
      }
+     printf("birinci asama tamam \n");
+     tempPhoto = findABS(resultForFirstDFT, size);
+     for (k = 0; k < size; k++)
+     {
+          col = k / height;
+          resultForSecondDFT[k] = 0 + 0 * I;
+          arg = -2.0 * PI * (k % height) / (double)size;
+          for (n = 0; n < width; n++)
+          {
+               place = (n * width) + col; // this because of : in second loop we do not know where we are, we are just mapping in width
+               cosarg = tempPhoto[place] * cos(place * arg);
+               sinarg = tempPhoto[place] * sin(place * arg);
+               temp = cosarg + sinarg * I; //fourier donusumu alani
+               resultForSecondDFT[k] += temp;
+          }
+     }
+     printf("ikinci asama tamam \n");
 
-     return result;
+     photo = findABS(resultForSecondDFT, size);
+     return photo;
 }
 int main(void)
 {
+     float *grayPhoto;
+
      int width, height, channels;
-     unsigned char *img = stbi_load("stopSign_gray.jpg", &width, &height, &channels, 0);
+     float *img = stbi_loadf("stopSign.jpeg", &width, &height, &channels, 0);
      if (img == NULL)
      {
           printf("an error occured while loading image \n");
           return 0;
      }
      printf("Loaded image has \t width = %d \t height = %d \t channels = %d \n", width, height, channels);
-
+     int gray_channels = channels == 4 ? 2 : 1;
+     grayPhoto = convertToGray(img, width, height, channels);
+     stbi_write_jpg("deneme.jpg", width, height, gray_channels, grayPhoto, 100);
+     free(grayPhoto);
      stbi_image_free(img);
      return 0;
 }
