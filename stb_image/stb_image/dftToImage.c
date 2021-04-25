@@ -2,6 +2,7 @@
 #include <complex.h>
 #include <stdlib.h>
 #include <math.h>
+#include <stdint.h>
 
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
@@ -48,7 +49,7 @@ void printComplexArray(double complex *T, int n)
 
      puts("");
 }
-void printDoubleArray(double *T, int n)
+void printFloatArray(float *T, int n)
 {
      int i;
      for (i = 0; i < n; i++)
@@ -60,19 +61,29 @@ double r2()
 {
      return (double)rand() / (double)RAND_MAX;
 }
-float *convertToGray(float *img, int width, int height, int channels)
+unsigned char *changePhotoToChar(float *photo, int width, int height, float max)
+{
+     unsigned char *return_photo = malloc(width * height);
+     float c = 255 / log(1 + max); 
+     for (int i = 0; i < width * height; i++)
+     {
+          return_photo[i] = (uint8_t)(c * log(1 + photo[i]));
+     }
+     return return_photo;
+}
+unsigned char *convertToGray(unsigned char *img, int width, int height, int channels)
 {
      size_t img_size = width * height * channels;
      int gray_channels = channels == 4 ? 2 : 1;
      size_t gray_img_size = width * height * gray_channels;
 
-     float *gray_img = malloc(gray_img_size);
+     unsigned char *gray_img = malloc(gray_img_size);
      if (gray_img == NULL)
      {
           printf("an error occured while loading gray_image \n");
           return 0;
      }
-     for (float *p = img, *pg = gray_img; p != img + img_size; p += channels, pg += gray_channels)
+     for (unsigned char *p = img, *pg = gray_img; p != img + img_size; p += channels, pg += gray_channels)
      {
           *pg = (uint8_t)((0.2126 * (*p) + 0.7152 * (*(p + 1)) + 0.0722 * (*(p + 2))));
           if (channels == 4)
@@ -112,12 +123,12 @@ float *findABS(double complex *complexValues, int size)
      {
           x = creal(complexValues[i]);
           y = cimag(complexValues[i]);
-          temp_res = sqrt((x * x) + (y * y)) / (size / 2);
+          temp_res = sqrt((x * x) + (y * y));
           result[i] = temp_res;
      }
      return result;
 }
-float *twoDimenDft(float *points, int height, int width)
+float *twoDimenDft(unsigned char *points, int height, int width)
 {
      int size = height * width;
      double complex *resultForFirstDFT = create1DComplexArray(size);
@@ -125,42 +136,43 @@ float *twoDimenDft(float *points, int height, int width)
      double complex temp;
      float *tempPhoto = create1DFloatArray(size);
      float *photo = create1DFloatArray(size);
-     int n, k, row, col, place;
+     int n, k, i, row, col, place;
      double arg;
      double cosarg, sinarg;
-     printf("birinci asama tamam \n");
 
-     for (k = 0; k < size; k++)
+     for (int i = 0; i < height; i++)
      {
-          printf("birinci asama tamam \n");
-
-          row = k / width;
-          resultForFirstDFT[k] = 0 + 0 * I;
-          arg = -2.0 * PI * (k % width) / (double)size;
-          for (n = 0; n < width; n++)
+          place = (i * width); 
+          for (k = 0; k < width; k++)
           {
-               printf("birinci asama tamam \n");
-               place = (row * width) + n; // this because of : in second loop we do not know where we are, we are just mapping in width
-               cosarg = points[place] * cos(place * arg);
-               sinarg = points[place] * sin(place * arg);
-               temp = cosarg + sinarg * I; //fourier donusumu alani
-               resultForFirstDFT[k] += temp;
+               resultForFirstDFT[(i * width) + k] = 0 + 0 * I;
+               arg = -2.0 * PI * k / (double)width;
+               for (n = 0; n < width; n++)
+               {
+                    cosarg = points[place + n] * cos(n * arg);
+                    sinarg = points[place + n] * sin(n * arg);
+                    temp = cosarg + sinarg * I; //fourier donusumu alani
+                    resultForFirstDFT[(i * width) + k] += temp;
+               }
           }
      }
      printf("birinci asama tamam \n");
      tempPhoto = findABS(resultForFirstDFT, size);
-     for (k = 0; k < size; k++)
+     for (i = 0; i < width; i++)
      {
-          col = k / height;
-          resultForSecondDFT[k] = 0 + 0 * I;
-          arg = -2.0 * PI * (k % height) / (double)size;
-          for (n = 0; n < width; n++)
+          for (k = 0; k < height; k++)
           {
-               place = (n * width) + col; // this because of : in second loop we do not know where we are, we are just mapping in width
-               cosarg = tempPhoto[place] * cos(place * arg);
-               sinarg = tempPhoto[place] * sin(place * arg);
-               temp = cosarg + sinarg * I; //fourier donusumu alani
-               resultForSecondDFT[k] += temp;
+               col = k / height;
+               resultForSecondDFT[(k * width) + i] = 0 + 0 * I;
+               arg = -2.0 * PI * k / (double)height;
+               for (n = 0; n < height; n++)
+               {
+                    place = (n * width); // this because of : in second loop we do not know where we are, we are just mapping in width
+                    cosarg = tempPhoto[place + i] * cos(n * arg);
+                    sinarg = tempPhoto[place + i] * sin(n * arg);
+                    temp = cosarg + sinarg * I; //fourier donusumu alani
+                    resultForSecondDFT[(k * width) + i] += temp;
+               }
           }
      }
      printf("ikinci asama tamam \n");
@@ -168,12 +180,45 @@ float *twoDimenDft(float *points, int height, int width)
      photo = findABS(resultForSecondDFT, size);
      return photo;
 }
+void printImage(unsigned char *T, int n)
+{
+     int i;
+     float x;
+     unsigned char temp;
+     for (i = 0; i < n; i++)
+     {
+          x = (float)T[i];
+          temp = (unsigned char)x;
+          printf("%f \n", x);
+          printf("%d \n", (unsigned)temp);
+     }
+     puts("");
+}
+void printImageFloat(float *T, int n)
+{
+     int i;
+     for (i = 0; i < n; i++)
+     {
+          printf("%f \n", 255 /log(1 + T[i]));
+          
+     }
+     puts("");
+}
+float findMax(float *T, int size){
+     float maximumVal = 0.0;
+     for (int i = 0; i < size; i++)
+     {
+          if(T[i] > maximumVal) maximumVal = T[i];
+     }
+     return maximumVal;
+}
 int main(void)
 {
-     float *grayPhoto;
+     unsigned char *grayPhoto;
+     unsigned char *dftPhoto;
 
      int width, height, channels;
-     float *img = stbi_loadf("stopSign.jpeg", &width, &height, &channels, 0);
+     unsigned char *img = stbi_load("berkayNormal.jpg", &width, &height, &channels, 0);
      if (img == NULL)
      {
           printf("an error occured while loading image \n");
@@ -182,7 +227,10 @@ int main(void)
      printf("Loaded image has \t width = %d \t height = %d \t channels = %d \n", width, height, channels);
      int gray_channels = channels == 4 ? 2 : 1;
      grayPhoto = convertToGray(img, width, height, channels);
-     stbi_write_jpg("deneme.jpg", width, height, gray_channels, grayPhoto, 100);
+     float *grayDft = twoDimenDft(grayPhoto, height, width);
+     float max = findMax(grayDft, height* width);
+     dftPhoto = changePhotoToChar(grayDft, width, height,max);
+     stbi_write_jpg("berkayFrekans.jpg", width, height, 1, dftPhoto, 100);
      free(grayPhoto);
      stbi_image_free(img);
      return 0;
