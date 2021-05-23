@@ -6,6 +6,18 @@ float complex *create1DComplexArray(int n)
      return T;
 }
 
+double complex *create1DDoubleComplexArray(int n)
+{
+     double complex *T = (double complex *)malloc(n * sizeof(double complex));
+     return T;
+}
+
+float complex *create1DFloatComplexArray(int n)
+{
+     float complex *T = (float complex *)malloc(n * sizeof(float complex));
+     return T;
+}
+
 float complex **create2DComplexArray(int N, int M)
 {
      float complex **T = (float complex **)malloc(N * sizeof(float complex *));
@@ -38,7 +50,25 @@ void printComplexArray(float complex *T, int n)
 {
      int i;
      for (i = 0; i < n; i++)
-          printf("%d. iteration of DFT = %.3f %+.3fi\n", i + 1, creal(T[i]), cimag(T[i]));
+          printf("%d. member of array = %.3f %+.3fi\n", i + 1, creal(T[i]), cimag(T[i]));
+
+     puts("");
+}
+
+void printDoubleComplexArray(double complex *T, int n)
+{
+     int i;
+     for (i = 0; i < n; i++)
+          printf("%d. member of array = %f %+fi\n", i + 1, creal(T[i]), cimag(T[i]));
+
+     puts("");
+}
+
+void printFloatComplexArray(float complex *T, int n)
+{
+     int i;
+     for (i = 0; i < n; i++)
+          printf("%d. member of array = %f %+fi\n", i + 1, creal(T[i]), cimag(T[i]));
 
      puts("");
 }
@@ -48,6 +78,15 @@ void printFloatArray(float *T, int n)
      int i;
      for (i = 0; i < n; i++)
           printf(" %.3f\t", T[i]);
+
+     puts("");
+}
+
+void printDoubleArray(double *T, int n)
+{
+     int i;
+     for (i = 0; i < n; i++)
+          printf(" %f\t", T[i]);
 
      puts("");
 }

@@ -12,36 +12,41 @@
 #define PI 3.141592654
 #define MASTER 0
 
-double complex *create1DComplexArray(int n)
+float complex *create1DComplexArray(int n)
 {
-     double complex *T = (double complex *)malloc(n * sizeof(double complex));
+     float complex *T = (float complex *)malloc(n * sizeof(float complex));
      return T;
 }
-double complex **create2DComplexArray(int N, int M)
+
+float complex **create2DComplexArray(int N, int M)
 {
-     double complex **T = (double complex **)malloc(N * sizeof(double complex *));
+     float complex **T = (float complex **)malloc(N * sizeof(float complex *));
      for (int i = 0; i < N; i++)
-          T[i] = malloc(M * sizeof(double complex));
+          T[i] = malloc(M * sizeof(float complex));
      return T;
 }
+
 double *create1DDoubleArray(int n)
 {
      double *T = (double *)malloc(n * sizeof(double));
      return T;
 }
-double *create1DFloatArray(int n)
+
+float *create1DFloatArray(int n)
 {
      float *T = (float *)malloc(n * sizeof(float));
      return T;
 }
-double *create2DDoubleArray(int n, int m)
+
+double **create2DDoubleArray(int n, int m)
 {
      double **T = (double **)malloc(n * sizeof(double *));
      for (int i = 0; i < n; i++)
           T[i] = malloc(m * sizeof(double));
      return T;
 }
-void printComplexArray(double complex *T, int n)
+
+void printComplexArray(float complex *T, int n)
 {
      int i;
      for (i = 0; i < n; i++)
@@ -49,6 +54,7 @@ void printComplexArray(double complex *T, int n)
 
      puts("");
 }
+
 void printFloatArray(float *T, int n)
 {
      int i;
@@ -57,20 +63,68 @@ void printFloatArray(float *T, int n)
 
      puts("");
 }
+
+void printImage(unsigned char *T, int n)
+{
+     int i;
+     float x;
+     unsigned char temp;
+     for (i = 0; i < n; i++)
+     {
+          printf("img[%d] \t %d \n", i, T[i]);
+     }
+     puts("");
+}
+
+void printImageFloat(float *T, int n)
+{
+     int i;
+     for (i = 0; i < n; i++)
+     {
+          printf("float[%d] \t %f \n", i, T[i]);
+     }
+     puts("");
+}
+
 double r2()
 {
      return (double)rand() / (double)RAND_MAX;
 }
-unsigned char *changePhotoToChar(float *photo, int width, int height, float max)
+
+unsigned char *changePhotoToChar(float *photo, int width, int height)
 {
      unsigned char *return_photo = malloc(width * height);
-     float c = 255 / log(1 + max); 
+     for (int i = 0; i < width * height; i++)
+     {
+          return_photo[i] = (uint8_t)(photo[i]* 255);
+     }
+     return return_photo;
+}
+
+unsigned char *changePhotoToCharWithLogTransform(float *photo, int width, int height, float max)
+{
+     unsigned char *return_photo = malloc(width * height);
+     float c = 255 / log(1 + max);
      for (int i = 0; i < width * height; i++)
      {
           return_photo[i] = (uint8_t)(c * log(1 + photo[i]));
      }
      return return_photo;
 }
+
+float *logTransform(float *photo, int width, int height, float max)
+{
+     float *return_photo = create1DFloatArray(width * height);
+     float c = 255 / log(1 + max);
+     printf("log birinci asama tamam \n");
+
+     for (int i = 0; i < width * height; i++)
+     {
+          return_photo[i] = (c * log(1 + photo[i]));
+     }
+     return return_photo;
+}
+
 unsigned char *convertToGray(unsigned char *img, int width, int height, int channels)
 {
      size_t img_size = width * height * channels;
@@ -93,10 +147,21 @@ unsigned char *convertToGray(unsigned char *img, int width, int height, int chan
      }
      return gray_img;
 }
-double complex *dft(double *points, int size)
+
+float *convertBetweenZeroAndOne(unsigned char *img, int width, int height)
 {
-     double complex *result = create1DComplexArray(size);
-     double complex temp;
+     float *newImage = create1DFloatArray(width * height);
+     for (size_t i = 0; i < width*height; i++)
+     {
+          newImage[i] = ((float)img[i])/255;
+     }
+     return newImage;
+}
+
+float complex *dft(double *points, int size)
+{
+     float complex *result = create1DComplexArray(size);
+     float complex temp;
      int n, k;
      double arg;
      double cosarg, sinarg;
@@ -115,7 +180,7 @@ double complex *dft(double *points, int size)
      return result;
 }
 
-float *findABS(double complex *complexValues, int size)
+float *findABS(float complex *complexValues, int size)
 {
      float *result = create1DFloatArray(size);
      float x, y, temp_res;
@@ -128,12 +193,35 @@ float *findABS(double complex *complexValues, int size)
      }
      return result;
 }
-float *twoDimenDft(unsigned char *points, int height, int width)
+
+float *findABSLast(float complex *complexValues, int size)
+{
+     float *result = create1DFloatArray(size);
+     float x, y, temp_res;
+     for (int i = 0; i < size; i++)
+     {
+          x = creal(complexValues[i]);
+          y = cimag(complexValues[i]);
+          temp_res = sqrt((x * x) + (y * y));
+          if(temp_res > 1.0)
+          {
+               result[i] = 1;
+          } 
+          else 
+          {
+               result[i] = temp_res;
+          }
+
+     }
+     return result;
+}
+
+float *twoDimenDft(float *points, int height, int width)
 {
      int size = height * width;
-     double complex *resultForFirstDFT = create1DComplexArray(size);
-     double complex *resultForSecondDFT = create1DComplexArray(size);
-     double complex temp;
+     float complex *resultForFirstDFT = create1DComplexArray(size);
+     float complex *resultForSecondDFT = create1DComplexArray(size);
+     float complex temp;
      float *tempPhoto = create1DFloatArray(size);
      float *photo = create1DFloatArray(size);
      int n, k, i, row, col, place;
@@ -142,7 +230,7 @@ float *twoDimenDft(unsigned char *points, int height, int width)
 
      for (int i = 0; i < height; i++)
      {
-          place = (i * width); 
+          place = (i * width);
           for (k = 0; k < width; k++)
           {
                resultForFirstDFT[(i * width) + k] = 0 + 0 * I;
@@ -157,7 +245,7 @@ float *twoDimenDft(unsigned char *points, int height, int width)
           }
      }
      printf("birinci asama tamam \n");
-     tempPhoto = findABS(resultForFirstDFT, size);
+     tempPhoto = findABSLast(resultForFirstDFT, size);
      for (i = 0; i < width; i++)
      {
           for (k = 0; k < height; k++)
@@ -177,48 +265,161 @@ float *twoDimenDft(unsigned char *points, int height, int width)
      }
      printf("ikinci asama tamam \n");
 
-     photo = findABS(resultForSecondDFT, size);
+     photo = findABSLast(resultForSecondDFT, size);
+     printf("son asama tamam \n");
      return photo;
 }
-void printImage(unsigned char *T, int n)
+
+float *twoDimenReverseDft(float *points, int height, int width)
 {
-     int i;
-     float x;
-     unsigned char temp;
-     for (i = 0; i < n; i++)
+     int size = height * width;
+     float complex *resultForFirstDFT = create1DComplexArray(size);
+     float complex *resultForSecondDFT = create1DComplexArray(size);
+     float complex temp;
+     float *tempPhoto = create1DFloatArray(size);
+     float *photo = create1DFloatArray(size);
+     int n, k, i, row, col, place;
+     double arg;
+     double cosarg, sinarg;
+
+     for (int i = 0; i < height; i++)
      {
-          x = (float)T[i];
-          temp = (unsigned char)x;
-          printf("%f \n", x);
-          printf("%d \n", (unsigned)temp);
+          place = (i * width);
+          for (k = 0; k < width; k++)
+          {
+               resultForFirstDFT[(i * width) + k] = 0 + 0 * I;
+               arg = 2.0 * PI * k / (double)width;
+               for (n = 0; n < width; n++)
+               {
+                    cosarg = points[place + n] * cos(n * arg);
+                    sinarg = points[place + n] * sin(n * arg);
+                    temp = cosarg + sinarg * I; //fourier donusumu alani
+                    resultForFirstDFT[(i * width) + k] += temp;
+               }
+               
+               resultForFirstDFT[(i * width) + k] /= width;
+
+          }
      }
-     puts("");
+     printf("birinci asama tamam \n");
+     tempPhoto = findABSLast(resultForFirstDFT, size);
+     for (i = 0; i < width; i++)
+     {
+          for (k = 0; k < height; k++)
+          {
+               col = k / height;
+               resultForSecondDFT[(k * width) + i] = 0 + 0 * I;
+               arg = 2.0 * PI * k / (double)height;
+               for (n = 0; n < height; n++)
+               {
+                    place = (n * width); // this because of : in second loop we do not know where we are, we are just mapping in width
+                    cosarg = tempPhoto[place + i] * cos(n * arg);
+                    sinarg = tempPhoto[place + i] * sin(n * arg);
+                    temp = cosarg + sinarg * I; //fourier donusumu alani
+                    resultForSecondDFT[(k * width) + i] += temp;
+               }
+
+               resultForSecondDFT[(k * width) + i]  /= height;
+               
+          }
+     }
+     printf("ikinci asama tamam \n");
+
+     photo = findABSLast(resultForSecondDFT, size);
+     return photo;
 }
-void printImageFloat(float *T, int n)
+float findMax(float *T, int size)
 {
-     int i;
-     for (i = 0; i < n; i++)
-     {
-          printf("%f \n", 255 /log(1 + T[i]));
-          
-     }
-     puts("");
-}
-float findMax(float *T, int size){
      float maximumVal = 0.0;
      for (int i = 0; i < size; i++)
      {
-          if(T[i] > maximumVal) maximumVal = T[i];
+          if (T[i] > maximumVal)
+               maximumVal = T[i];
      }
      return maximumVal;
 }
+
+float *fftShift(float *Image, int height, int width)
+{
+     int halfOfHeight = height/2;
+     int halfOfWidth = width/2;
+     float *shiftedImage = create1DFloatArray(height * width);
+     for (int i = 0; i < halfOfHeight; i++)
+     {
+          for (int j = 0; j < halfOfWidth; j++)
+          {
+               shiftedImage[(halfOfHeight * width + halfOfWidth) + (i * width) + j] = Image[(i * width) + j];
+          }
+          
+     }
+     for (int i = 0; i < halfOfHeight; i++)
+     {
+          for (int j = 0; j < halfOfWidth; j++)
+          {
+               shiftedImage[(halfOfHeight * width) + (i * width) + j] = Image[halfOfWidth + (i * width) + j];
+          }
+     }
+     for (int i = 0; i < halfOfHeight; i++)
+     {
+          for (int j = 0; j < halfOfWidth; j++)
+          {
+               shiftedImage[halfOfWidth + (i * width) + j] = Image[(halfOfHeight * width) + (i * width) + j];
+          }
+     }
+     for (int i = 0; i < halfOfHeight; i++)
+     {
+          for (int j = 0; j < halfOfWidth; j++)
+          {
+               shiftedImage[(i * width) + j] = Image[(halfOfHeight * width + halfOfWidth) + (i * width) + j];
+          }
+     }
+     return shiftedImage;
+}
+
+float *fftReverseShift(float *Image, int height, int width)
+{
+     int halfOfHeight = height/2;
+     int halfOfWidth = width/2;
+     float *shiftedImage = create1DFloatArray(height * width);
+     for (int i = 0; i < halfOfHeight; i++)
+     {
+          for (int j = 0; j < halfOfWidth; j++)
+          {
+               shiftedImage[(i * width) + j] = Image[(halfOfHeight * width + halfOfWidth) + (i * width) + j];
+          }
+          
+     }
+     for (int i = 0; i < halfOfHeight; i++)
+     {
+          for (int j = 0; j < halfOfWidth; j++)
+          {
+               shiftedImage[halfOfWidth + (i * width) + j] = Image[(halfOfHeight * width) + (i * width) + j] ;
+          }
+     }
+     for (int i = 0; i < halfOfHeight; i++)
+     {
+          for (int j = 0; j < halfOfWidth; j++)
+          {
+               shiftedImage[(halfOfHeight * width) + (i * width) + j] = Image[halfOfWidth + (i * width) + j];
+          }
+     }
+     for (int i = 0; i < halfOfHeight; i++)
+     {
+          for (int j = 0; j < halfOfWidth; j++)
+          {
+               shiftedImage[(halfOfHeight * width + halfOfWidth) + (i * width) + j] = Image[(i * width) + j];
+          }
+     }
+     return shiftedImage;
+}
+
 int main(void)
 {
      unsigned char *grayPhoto;
      unsigned char *dftPhoto;
 
      int width, height, channels;
-     unsigned char *img = stbi_load("berkayNormal.jpg", &width, &height, &channels, 0);
+     unsigned char *img = stbi_load("photos/stopSign.jpeg", &width, &height, &channels, 0);
      if (img == NULL)
      {
           printf("an error occured while loading image \n");
@@ -226,12 +427,29 @@ int main(void)
      }
      printf("Loaded image has \t width = %d \t height = %d \t channels = %d \n", width, height, channels);
      int gray_channels = channels == 4 ? 2 : 1;
+     printImage(img, 10);
      grayPhoto = convertToGray(img, width, height, channels);
-     float *grayDft = twoDimenDft(grayPhoto, height, width);
-     float max = findMax(grayDft, height* width);
-     dftPhoto = changePhotoToChar(grayDft, width, height,max);
-     stbi_write_jpg("berkayFrekans.jpg", width, height, 1, dftPhoto, 100);
+     float *littleImage = convertBetweenZeroAndOne(grayPhoto, width, height); 
+     float *grayDft = twoDimenDft(littleImage, height, width);
+     //float max = findMax(grayDft, height * width);
+     //grayDft = fftShift(grayDft, height, width);
+     //float *grayDftReversed = fftReverseShift(grayDft, height, width);
+     //grayDft = logTransform(grayDft , width, height, max);
+     //printImageFloat(grayDft, 10);
+     //float *reverseDft = twoDimenReverseDft(grayDft, height, width);
+     //printImageFloat(reverseDft, 10);
+     //float max = findMax(reverseDft, height * width);
+     dftPhoto = changePhotoToChar(grayDft, width, height);
+     //printImage(dftPhoto, 10);ge
+     //log transform uygulamadan reverse et
+     //sadece görsellikte log transf
+     stbi_write_jpg("photos/denemeWithSuhaHoca.jpg", width, height, 1, dftPhoto, 100);
+     //dftPhoto = changePhotoToCharWithLogTransform(grayDftReversed, width, height, max);
+     //stbi_write_jpg("shifted2.jpg", width, height, 1, dftPhoto, 100);
      free(grayPhoto);
+     free(dftPhoto);
+     //free(grayDftReversed);
+     free(grayDft);
      stbi_image_free(img);
      return 0;
 }

@@ -5,7 +5,6 @@
   #include <stdlib.h>
   #include <math.h>
   #include <stdint.h>
-  #include "mpi.h"
   #include "dft2D.h"
   #include "arrayOperations.h"
   #include "imageOperations.h"
